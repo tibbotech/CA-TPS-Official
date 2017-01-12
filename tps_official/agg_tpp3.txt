@@ -1,0 +1,88 @@
+==info	root	<R=<TPS3 Device><Default>>
+==variables	root	<R=<date><<<date><D>> <M=1> <X=1>><Date/Time><1><0><^><^><^>>
+~~<R=<version><<<version><S>> <M=1> <X=1>><Version><1><0><^><remote|General><^>>
+~~<R=<datex><<<datex><D>> <M=1> <X=1>><Date/Time><1><0><^><remote|General><^>>
+~~<R=<modtime><<<variable><S>> <<modtime><D><F=N>>><Modification time><1><0><^><^><^>>
+>>SE	S	<R=<SE><<<0><I><D=Port 1><S=<Disabled=0><Enabled=1>><V=<L=0 1>>><<1><I><D=Port 2><S=<Disabled=0><Enabled=1>><V=<L=0 1>>><<2><I><D=Port 3><S=<Disabled=0><Enabled=1>><V=<L=0 1>>><<3><I><D=Port 4><S=<Disabled=0><Enabled=1>><V=<L=0 1>>><M=1><X=1>><Port Enable/Disable><1><1><^><remote|Serial Ports><^>>
+>>FC	S	<R=<FC><<<0><I><D=Port 1><S=<Disabled=0><Enabled=1>><V=<L=0 1>>><<1><I><D=Port 2><S=<Disabled=0><Enabled=1>><V=<L=0 1>>><<2><I><D=Port 3><S=<Disabled=0><Enabled=1>><V=<L=0 1>>><<3><I><D=Port 4><S=<Disabled=0><Enabled=1>><V=<L=0 1>>><M=1><X=1>><Flow Control><1><1><^><remote|Serial Ports><^>>
+>>BR	S	<R=<BR><<<0><I><D=Port 1><S=<1200bps=0><2400bps=1><4800bps=2><9600bps=3><19200bps=4><38400bps=5><57600bps=6><115200bps=7><150bps=8><300bps=9><600bps=10><28800bps=11><230400bps=12><460800bps=13>><V=<L=0 13>>><<1><I><D=Port 2><S=<1200bps=0><2400bps=1><4800bps=2><9600bps=3><19200bps=4><38400bps=5><57600bps=6><115200bps=7><150bps=8><300bps=9><600bps=10><28800bps=11><230400bps=12><460800bps=13>><V=<L=0 13>>><<2><I><D=Port 3><S=<1200bps=0><2400bps=1><4800bps=2><9600bps=3><19200bps=4><38400bps=5><57600bps=6><115200bps=7><150bps=8><300bps=9><600bps=10><28800bps=11><230400bps=12><460800bps=13>><V=<L=0 13>>><<3><I><D=Port 4><S=<1200bps=0><2400bps=1><4800bps=2><9600bps=3><19200bps=4><38400bps=5><57600bps=6><115200bps=7><150bps=8><300bps=9><600bps=10><28800bps=11><230400bps=12><460800bps=13>><V=<L=0 13>>><M=1><X=1>><Baudrate><1><1><^><remote|Serial Ports><^>>
+>>PR	S	<R=<PR><<<0><I><D=Port 1><S=<None=0><Even=1><Odd=2><Mark=3><Space=4>><V=<L=0 4>>><<1><I><D=Port 2><S=<None=0><Even=1><Odd=2><Mark=3><Space=4>><V=<L=0 4>>><<2><I><D=Port 3><S=<None=0><Even=1><Odd=2><Mark=3><Space=4>><V=<L=0 4>>><<3><I><D=Port 4><S=<None=0><Even=1><Odd=2><Mark=3><Space=4>><V=<L=0 4>>><M=1><X=1>><Parity><1><1><^><remote|Serial Ports><^>>
+>>BB	S	<R=<BB><<<0><I><D=Port 1><S=<7 bits=0><8 bits=1>><V=<L=0 1>>><<1><I><D=Port 2><S=<7 bits=0><8 bits=1>><V=<L=0 1>>><<2><I><D=Port 3><S=<7 bits=0><8 bits=1>><V=<L=0 1>>><<3><I><D=Port 4><S=<7 bits=0><8 bits=1>><V=<L=0 1>>><M=1><X=1>><Data Bits><1><1><^><remote|Serial Ports><^>>
+>>I0	S	<R=<I0><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_9><1><1><^><remote|IO><^>>
+>>I1	S	<R=<I1><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_8><1><1><^><remote|IO><^>>
+>>I2	S	<R=<I2><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_0><1><1><^><remote|IO><^>>
+>>I3	S	<R=<I3><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_16><1><1><^><remote|IO><^>>
+>>I4	S	<R=<I4><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_32><1><1><^><remote|IO><^>>
+>>I5	S	<R=<I5><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_33><1><1><^><remote|IO><^>>
+>>I6	S	<R=<I6><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_4><1><1><^><remote|IO><^>>
+>>I7	S	<R=<I7><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_20><1><1><^><remote|IO><^>>
+>>I8	S	<R=<I8><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_11><1><1><^><remote|IO><^>>
+>>I9	S	<R=<I9><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_10><1><1><^><remote|IO><^>>
+>>I10	S	<R=<I10><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_1><1><1><^><remote|IO><^>>
+>>I11	S	<R=<I11><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_17><1><1><^><remote|IO><^>>
+>>I12	S	<R=<I12><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_34><1><1><^><remote|IO><^>>
+>>I13	S	<R=<I13><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_35><1><1><^><remote|IO><^>>
+>>I14	S	<R=<I14><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_5><1><1><^><remote|IO><^>>
+>>I15	S	<R=<I15><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_21><1><1><^><remote|IO><^>>
+>>I16	S	<R=<I16><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_13><1><1><^><remote|IO><^>>
+>>I17	S	<R=<I17><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_12><1><1><^><remote|IO><^>>
+>>I18	S	<R=<I18><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_2><1><1><^><remote|IO><^>>
+>>I19	S	<R=<I19><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_18><1><1><^><remote|IO><^>>
+>>I20	S	<R=<I20><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_36><1><1><^><remote|IO><^>>
+>>I21	S	<R=<I21><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_37><1><1><^><remote|IO><^>>
+>>I22	S	<R=<I22><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_6><1><1><^><remote|IO><^>>
+>>I23	S	<R=<I23><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_22><1><1><^><remote|IO><^>>
+>>I24	S	<R=<I24><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_15><1><1><^><remote|IO><^>>
+>>I25	S	<R=<I25><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_14><1><1><^><remote|IO><^>>
+>>I26	S	<R=<I26><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_3><1><1><^><remote|IO><^>>
+>>I27	S	<R=<I27><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_19><1><1><^><remote|IO><^>>
+>>I28	S	<R=<I28><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_38><1><1><^><remote|IO><^>>
+>>I29	S	<R=<I29><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_39><1><1><^><remote|IO><^>>
+>>I30	S	<R=<I30><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_7><1><1><^><remote|IO><^>>
+>>I31	S	<R=<I31><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_23><1><1><^><remote|IO><^>>
+>>I32	S	<R=<I32><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_24><1><1><^><remote|IO><^>>
+>>I33	S	<R=<I33><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_25><1><1><^><remote|IO><^>>
+>>I34	S	<R=<I34><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_26><1><1><^><remote|IO><^>>
+>>I35	S	<R=<I35><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_27><1><1><^><remote|IO><^>>
+>>I36	S	<R=<I36><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_28><1><1><^><remote|IO><^>>
+>>I37	S	<R=<I37><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_29><1><1><^><remote|IO><^>>
+>>I38	S	<R=<I38><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_30><1><1><^><remote|IO><^>>
+>>I39	S	<R=<I39><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_31><1><1><^><remote|IO><^>>
+>>I40	S	<R=<I40><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_40><1><1><^><remote|IO><^>>
+>>I41	S	<R=<I41><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_41><1><1><^><remote|IO><^>>
+>>I42	S	<R=<I42><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_42><1><1><^><remote|IO><^>>
+>>I43	S	<R=<I43><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_43><1><1><^><remote|IO><^>>
+>>I44	S	<R=<I44><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_54><1><1><^><remote|IO><^>>
+>>I45	S	<R=<I45><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_55><1><1><^><remote|IO><^>>
+>>I46	S	<R=<I46><<<0><B><D=Enabled>><<1><B><D=Set Low>><M=1><X=1>><IO_NUM_44><1><1><^><remote|IO><^>>
+==functions	root	<R=<hash><<<context><S>><<variable><S>><M=1><X=1>><<<hash><I>><M=1><X=1>><Table Hash><^><^>>
+~~<R=<finishTable><<<context><S>><<variable><S>><M=1><X=1>><<<hash><I>><M=1><X=1>><Finish Table><^><^>>
+~~<R=<startTable><<<context><S>><<variable><S>><M=1><X=1>><<M=0><X=0>><Start Table><^><^>>
+~~<R=<addRecord><<<context><S>><<variable><S>><<record><S>><M=1><X=1>><<M=0><X=0>><Add Record><^><^>>
+~~<R=<removeRecord><<<context><S>><<variable><S>><<id><S>><M=1><X=1>><<M=0><X=0>><Remove Record><^><^>>
+~~<R=<updateRecord><<<context><S>><<variable><S>><<record><S>><M=1><X=1>><<M=0><X=0>><Update Record><^><^>>
+~~<R=<putRecords><<<record><S>><M=1><X=1>><<M=0><X=0>><Put Record><^><^>>
+~~<R=<login><<<challenge><S>><M=1><X=1>><<<owner><S>><<name><S>><<response><S>><M=1><X=1>><Login><^><^>>
+~~<R=<register><<M=0><X=0>><<<password><S>><M=1><X=1>><Auto Register><^><^>>
+~~<R=<synchronized><<M=0><X=0>><<M=0><X=0>><Synchronized><^><^>>
+>>init	<R=<init><<M=0><X=0>><<M=0><X=0>><Initialize all settings><^><remote>>
+>>reboot	<R=<reboot><<M=0><X=0>><<M=0><X=0>><Reboot device><^><remote>>
+>>si	<R=<si><<<num><I><S=<Port 1=0><Port 2=1><Port 3=2><Port 4=3>>><<data><S>><M=1><X=1>><<M=0><X=0>><Serial Port Output><^><remote>>
+==events	root
+>>io	I2	<R=<io><<<num><S><D=IO Num>><<st><S><D=IO State><S=<Low=0><High=1>>><M=1><X=1>><IO State Changed><^><2><remote>>
+>>ser	I2	<R=<ser><<<num><I><D=Serial port><S=<Port 1=0><Port 2=1><Port 3=2><Port 4=3>>><<data><S><D=Data>><M=1><X=1>><Serial Data Recieved><^><2><remote>>
+#define TBL_TIMESTAMP 1
+#define STG_TIMESTAMP 1
+#define AGG_DESCRIPTOR_FILE "agg_tpp3.txt"
+#define AGG_SETTING_CONTROL 1
+#define AGG_MAX_RECONNECTION_DELAY 15
+#define AGG_DEBUG_PRINT 0
+#define AGG_LOGIN_CONTROL 1
+#define AGG_MAX_NUM_ENTITY_TYPES 4
+#define AGG_MAX_CONTEXT_NAME_LEN 4
+#define AGG_MAX_NUM_SCRIPT_LINES 57
+#define AGG_MAX_SCRIPT_LINE_NAME_LEN 6
+#define AGG_MAX_FUNCTION_NAME_LEN 12
+#define AGG_MAX_NUM_STORED_EVENTS 0
+@@STG_RefPath=stg.txt
+@@TBL_RefPath=tbl.txt

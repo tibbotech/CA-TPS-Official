@@ -1,0 +1,943 @@
+include "global.tbh"
+
+declare function is_io_active(index as byte) as no_yes
+'------------------------------------------------------------------------------
+public dim html_channel_index as byte
+dim it_was_save as no_yes
+dim html_setting_status(MAX_HTML_NUM_SETTINGS) as en_stg_status_codes
+
+public sub html_print_setting(byref html_descr_file as string)
+'Read the html_descr_file and print the settings that is in the file. 
+	dim i as word
+	dim setting_val, setting_str as string(50)
+	dim setting_name as string(8)
+	dim setting_input_len as string(8)
+	dim setting_input_type as string(1)
+	dim setting_unit as string(12)
+	dim s,setting_option as string
+	dim pos1, pos2, pos3, stg_num as byte
+	dim tab_index as byte
+	
+	romfile.open(html_descr_file)
+	i=romfile.find(romfile.pointer,">>",1)
+	tab_index=2
+	while i<>0
+		'doevents
+		setting_input_type=""
+		setting_name=""
+		setting_val=""
+		setting_str=""
+		setting_option=""
+		setting_unit=""
+		romfile.pointer=i+2
+			
+		do												'get the setting name (the setting name that is used in the settings file)
+			i=romfile.find(romfile.pointer,chr(TAB),1) 
+			if i=0 then exit sub
+			s=romfile.getdata(i-romfile.pointer)
+			romfile.pointer=i+1
+		loop while s=""
+		setting_name=s 		
+		do												'get the setting string (the string that is printed on the html page as setting name)
+			i=romfile.find(romfile.pointer,chr(TAB),1) 
+			if i=0 then exit sub
+			s=romfile.getdata(i-romfile.pointer)
+			romfile.pointer=i+1
+		loop while s="" 
+		setting_str=s		
+		do												'get the setting data, setting_input_type, I:input box, L:list box, A:input label, B: list label
+			i=romfile.find(romfile.pointer,chr(TAB),1) 
+			if i=0 then exit sub
+			s=romfile.getdata(i-romfile.pointer)
+			romfile.pointer=i+1
+		loop while s=""
+		pos1=instr(1,s,CHR(44),1)
+		pos2=instr(1,s,CHR(44),2)
+		pos3=instr(1,s,CHR(44),3)
+		
+		setting_input_type=mid(s,pos1+1,1)			'if input type is list box(L) or list label(B), then setting data also contain the options for the list box
+
+		if setting_input_type="L" or setting_input_type="B" then
+			if pos3> 0 then
+				setting_option=mid(s,pos2+1,pos3-pos2-1)
+			else
+				setting_option=mid(s,pos2+1,len(s)-pos2)
+			end if
+		end if										'if input type is input box(I) or input label(A), then setting data also contain the maximum input length
+		
+		if setting_input_type="I" or setting_input_type="T" or setting_input_type="D" then
+			if pos3> 0 then
+				setting_input_len=mid(s,pos2+1,pos3-pos2-1)
+			else
+				setting_input_len=mid(s,pos2+1,len(s)-pos2)
+			end if
+		end if
+		
+		if pos3>0 then
+			setting_unit=mid(s,pos3+1,len(s)-pos3)
+		end if
+				
+		sock_setsend("<tr><td width=80%><table width = 100% border = '1'><tr><td width=66%>")
+		
+		'using the setting name to find the actual values
+		stg_num=stg_find(setting_name)
+		if stg_num=0 then  'not found in the setting list
+			device_settings_sg(setting_name,html_channel_index,setting_val,stg_num,EN_STG_GET)
+		else
+			if it_was_save=NO then
+
+				html_setting_status(stg_num-1)=stg_sg(setting_name,html_channel_index,setting_val,EN_STG_GET)
+				callback_html_stg_mod_sg(setting_name,html_channel_index,setting_val,EN_STG_GET)
+			else
+				stg_sg(setting_name,html_channel_index,setting_val,EN_STG_GET)		
+				callback_html_stg_mod_sg(setting_name,html_channel_index,setting_val,EN_STG_GET)
+			end if
+		end if
+		
+		tab_index=tab_index+1
+		device_process_esc_seq(setting_str)
+		sock_setsend(setting_str)
+		sock_setsend("</td>")
+
+		sock_setsend("<td width=34%>")
+		
+		if pos3>0 then
+			sock_setsend("<table width=100%><tr><td align='left'>")
+		end if
+		
+		select case setting_input_type
+		case "L":
+			sock_setsend("<select name=\x22"+setting_name+"\x22 size =1 STYLE='width: 100%' tabindex ='"+str(tab_index)+"'>")
+			pos1=1
+			pos2=instr(1,setting_option,";",1)
+			
+			while pos2<>0
+				s=mid(setting_option,pos1,pos2-pos1)
+				sock_setsend("<option ")
+				pos1=instr(1,s,"-",1)
+				if left(s,pos1-1)=setting_val then
+					sock_setsend("selected=\x22selected\x22 ")
+				end if
+				sock_setsend("value=\x22"+left(s,pos1-1)+"\x22>"+mid(s,pos1+1,len(s)-pos1)+"</option>")
+				pos1=pos2+1
+				pos2=instr(pos1,setting_option,";",1)
+			wend	
+			sock_setsend("</select>")
+			
+		case "I":
+			sock_setsend("<input type=\x22text\x22 name=\x22"+setting_name+"\x22 maxlength=\x22"+ setting_input_len+"\x22 value=\x22")
+			sock_setsend(setting_val)
+			if pos3>0 then 
+				sock_setsend("\x22 tabindex ='"+str(tab_index)+"' size=\x2210\x22>")
+			else
+				sock_setsend("\x22 tabindex ='"+str(tab_index)+"' size=\x2220\x22>")
+			end if
+		case "T":
+			sock_setsend("<input type=\x22time\x22 name=\x22"+setting_name+"\x22 value=\x22")
+			sock_setsend(setting_val)
+			if pos3>0 then 
+				sock_setsend("\x22 tabindex ='"+str(tab_index)+"' size=\x2210\x22>")
+			else
+				sock_setsend("\x22 tabindex ='"+str(tab_index)+"' size=\x2220\x22>")
+			end if
+		
+		case "D":
+			sock_setsend("<input type=\x22date\x22 name=\x22"+setting_name+"\x22 value=\x22")
+			sock_setsend(setting_val)
+			if pos3>0 then 
+				sock_setsend("\x22 tabindex ='"+str(tab_index)+"' size=\x2210\x22>")
+			else
+				sock_setsend("\x22 tabindex ='"+str(tab_index)+"' size=\x2220\x22>")
+			end if
+		
+		end select
+		
+		if pos3>0 then
+			device_process_esc_seq(setting_unit)
+			sock_setsend("</td><td align='right'>"+setting_unit+"</td></tr></table>")
+		end if
+
+		sock_setsend("</td>")
+		sock_setsend("</tr></table></td>")
+	'Print the setting status	
+		sock_setsend("<td width=20% align=center>")
+		if stg_num>0 then
+			select case html_setting_status(stg_num-1)
+			case EN_STG_STATUS_OK:
+				'sock_setsend("<font color=Green>")
+				'sock_setsend("<b>OK</b>")
+			case EN_STG_STATUS_INVALID:
+				sock_setsend("<font color=Red>")
+				sock_setsend("<b>Invalid</b>")
+			case EN_STG_STATUS_UNKNOWN:
+				sock_setsend("<font color=Red>")
+				sock_setsend("<b>Unfound</b>")
+			case else:
+				sock_setsend("<font color=Red>")
+				sock_setsend("<b>Failed</b>")
+			end select
+		end if
+		sock_setsend("</td></tr>")
+skip_print:		
+		i=romfile.find(romfile.pointer,">>",1)
+	wend
+end sub
+
+'------------------------------------------------------------------------------
+public sub html_save_setting()
+'Save the setting values
+	dim x, pos, pos1, stg_num as byte
+	dim setting_name as string(16)
+	dim setting_val as string(50)
+	dim http_req_string as string
+	dim backup_sock as byte
+	
+	backup_sock=sock.num
+	http_req_string=sock.httprqstring
+	setting_name=get_http_argument(http_req_string,"page=")
+	
+	select case setting_name
+	case "ser":page_code=0
+	case "sntp":page_code=1
+	case "agg":page_code=2
+	case "ethernet":page_code=3
+	case "gprs":page_code=4
+	case "wifi":page_code=5
+	case "pass":page_code=6
+	case else:
+			page_code=255
+	end select
+	
+	html_spec_chr_convert(http_req_string)
+	pos=instr(1,http_req_string,"session=",1)
+	pos1=instr(1,http_req_string,"ch=",1)
+	
+	'if pick the later one, 'session' or 'ch', and only count the ones of them as settings
+	'if ch= comes after the session=, use ch=
+	if pos1>pos then
+		pos=pos1
+		'find the first '=' after the 'ch='
+		x=instr(pos+3,http_req_string,"=",1)
+	else
+		'find the first '=' after 'session='
+		x=instr(pos+8,http_req_string,"=",1)
+	end if
+	pos1=instr(pos,http_req_string,"&",1)
+	it_was_save=NO
+	
+	if x>0 then
+		sock.gethttprqstring(255)
+	end if
+	while x<>0
+		'doevents
+		it_was_save=YES
+		setting_name=mid(http_req_string,pos1+1,x-pos1-1)
+		setting_val=get_http_argument(http_req_string,setting_name+"=")
+		stg_num=stg_find(setting_name)
+		
+		if stg_num<>0 then
+			stg_num=stg_num-1
+			if device_setting_check(setting_name,setting_val)=ng then 
+				html_setting_status(stg_num)=EN_STG_STATUS_INVALID
+				goto next_setting
+			end if
+			callback_html_stg_mod_sg(setting_name,html_channel_index,setting_val,EN_STG_SET)
+			html_setting_status(stg_num)=stg_sg(setting_name,html_channel_index,setting_val,EN_STG_SET)
+			if html_setting_status(stg_num)=EN_STG_STATUS_OK then device_setting_set(setting_name,html_channel_index,setting_val)
+		else
+			setting_val = get_http_argument(http_req_string,setting_name+"=")
+			html_setting_status(stg_num)=device_settings_sg(setting_name,html_channel_index,setting_val,stg_num,EN_STG_SET)	
+		end if
+next_setting:
+		sock.num=backup_sock
+		pos1=instr(pos1+1,http_req_string,"&",1)
+		pos=x+1
+		x=instr(pos,http_req_string,"=",1)
+		if x=0 and len(http_req_string)=255 then
+			http_req_string=right(http_req_string,10)
+			http_req_string=http_req_string+sock.gethttprqstring(240)
+			if http_req_string>0 then
+				pos1=instr(1,http_req_string,"&",1)
+				x=instr(pos1+1,http_req_string,"=",1)
+			end if
+		end if
+	wend	
+end sub
+
+'------------------------------------------------------------------------------
+public sub html_channel_selected
+	dim i as byte
+
+	if NUM_SERIAL_PORTS>1 then
+		sock_setsend("<select name = 'ch' onchange=PortSelected(this.value) STYLE='width: 100%'>")
+		for i = 0 to NUM_SERIAL_PORTS-1
+			if i = html_channel_index then
+				sock_setsend("<option value = '"+str(i)+"' selected='selected'>Serial Port "+str(i+1)+"</option>")
+			else
+				sock_setsend("<option value = '"+str(i)+"' >Serial Port "+str(i+1)+"</option>")
+			end if
+		next i	
+		sock_setsend("</select>")
+	end if
+end sub
+
+public sub html_ask_for_reboot()
+	if it_was_save=YES then
+		sock_setsend("onload = reboot_confirm()")
+	end if
+	
+end sub
+'------------------------------------------------------------------------------
+function check_io_enabled(io_num as pl_io_num) as string
+	io.num=io_num
+	if io.enabled=yes then
+		check_io_enabled="checked='true'"
+	else
+		check_io_enabled=""
+	end if
+	
+end function
+
+'------------------------------------------------------------------------------
+function check_io_control_state(index as byte) as string
+	if param_io(index).io_output=1 then
+		check_io_control_state="checked='true'"
+	else
+		check_io_control_state=""
+	end if
+
+end function
+
+'------------------------------------------------------------------------------
+function check_io_state(io_num as pl_io_num) as string
+	io.num=io_num
+	if io.state=high then
+		check_io_state="<table><tr><td width='24' bgcolor='green' align='center'><font color='white'> H </font></td></tr></table>"
+	else
+		check_io_state="<table><tr><td width='24' bgcolor='red' align='center'><font color='white'> L </font></td></tr></table>"
+	end if
+end function
+
+'------------------------------------------------------------------------------
+public sub proc_html_io_event()
+	dim s1,s2 as string(16)
+	dim s3 as string(NUM_OF_IO*3)
+	dim i as byte
+	dim pos1, pos2 as byte
+	
+	pos1=instr(1,sock.httprqstring,"i=",1)
+	pos2=instr(1,sock.httprqstring,"z=",1)
+
+	if pos1=0 and pos2=0 then
+		'no item found, it's not a click triggered event, return all status
+		s3=""
+		for i=0 to NUM_OF_IO-1
+			if is_io_active(i)=YES then
+				io.num=index_to_io_num(i)
+				if io.state=LOW then
+					s3=s3+"0"
+				else
+					s3=s3+"1"
+				end if
+			else
+				s3=s3+"2"
+			end if
+		next i
+
+		for i=0 to NUM_OF_IO-1
+			io.num=index_to_io_num(i)
+			if io.enabled=yes then
+				s3=s3+"1"
+			else
+				s3=s3+"0"
+			end if			
+		next i
+		
+		for i=0 to NUM_OF_IO-1
+			if param_io(i).io_output=1 then
+				s3=s3+"1"
+			else
+				s3=s3+"0"
+			end if			
+		next i
+		
+		sock_setsend(s3)
+		exit sub	
+	end if
+	
+	login_timeout_reset()
+	if pos1>0 then
+		s1=get_http_argument(sock.httprqstring,"i=")
+		s2=left(s1,1)
+		select case s2
+		case "a":
+			s2=right(s1,len(s1)-1)
+			s1=get_http_argument(sock.httprqstring,"s=")
+			stg_set("I"+s2,0,s1)
+			i=val(s2)
+			if is_io_active(i)=YES then
+				io.num=index_to_io_num(i)
+				if io.state=LOW then
+					s1="0"
+				else
+					s1="1"
+				end if
+				sock_setsend(s1)
+			else
+				s1="2"
+			end if
+			
+		case "b":
+			
+			s2=right(s1,len(s1)-1)
+			s1=get_http_argument(sock.httprqstring,"s=")
+			stg_set("I"+s2,1,s1)
+			i=val(s2)
+			if is_io_active(i)=YES then
+				io.num=index_to_io_num(i)
+				if io.state=LOW then
+					s1="0"
+				else
+					s1="1"
+				end if
+				sock_setsend(s1)
+			else
+				s1="2"
+			end if
+			
+		case "K":
+			s2=right(s1,len(s1)-1)
+			s1=get_http_argument(sock.httprqstring,"s=")
+		
+		#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2
+			i=val(s2)/4
+			
+			select case s2
+			case "1","5","9","13":
+				select case s1
+				case "0": 
+					stg_set("SE",i,"0")
+					stg_set("FC",i,"0")
+				case "1":
+					stg_set("SE",i,"1")
+					stg_set("FC",i,"0")			
+				case "2":
+					stg_set("SE",i,"1")
+					stg_set("FC",i,"1")	
+				case else:
+					
+				end select
+			case "3","7","11","15","17","19","21","23","25","27":
+			case else:
+			end select
+		#endif
+		
+		#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2
+			i=val(s2)/2
+			
+			select case s2
+			case "1","3","5","7":
+				select case s1
+				case "0": 
+					stg_set("SE",i,"0")
+					stg_set("FC",i,"0")
+				case "1":
+					stg_set("SE",i,"1")
+					stg_set("FC",i,"0")			
+				case "2":
+					stg_set("SE",i,"1")
+					stg_set("FC",i,"1")	
+				case else:
+					
+				end select
+			case "9","11":
+			case else:
+			end select	
+		#endif
+		s1=str(param_se(i))+str(param_fc(i))
+		sock_setsend(s1)
+
+		case else:
+		
+		end select	
+	end if
+
+end sub
+
+'------------------------------------------------------------------------------
+public sub print_io_item(index as byte, active as no_yes, invert as no_yes)
+	dim s1 as string(2)
+	dim io_num as pl_io_num
+	
+	s1=str(index)
+	io_num=index_to_io_num(index)
+	if active=YES then
+		if invert=no then
+			sock_setsend("<td width=25%> <table><tr><td align='center'>"+str(index_to_io_num(index))+"</td></tr>")
+			sock_setsend("<tr><td><input type='checkbox' id='a"+s1+"' "+check_io_enabled(io_num)+" onclick=\x22UT2('a"+s1+"')\x22> </td></tr>")
+			sock_setsend("<tr><td><input type='checkbox' id='b"+s1+"' "+check_io_control_state(index)+" onclick=\x22UT2('b"+s1+"')\x22></td></tr>")
+			sock_setsend("<tr><td id='z"+str(index)+"'>"+check_io_state(io_num)+"</td></tr></table></td>")
+		else
+			sock_setsend("<td width=25%> <table><tr><td id='z"+str(index)+"'>"+check_io_state(io_num)+"</td></tr>")
+			sock_setsend("<tr><td><input type='checkbox' id='b"+s1+"' "+check_io_control_state(index)+" onclick=\x22UT2('b"+s1+"')\x22></td></tr>")
+			sock_setsend("<tr><td> <input type='checkbox' id='a"+s1+"' "+check_io_enabled(io_num)+" onclick=\x22UT2('a"+s1+"')\x22> </td></tr>")
+			sock_setsend("<tr><td align='center'>"+str(index_to_io_num(index))+"</td></tr><tr></table></td>")
+		
+		end if
+	else
+		if invert=no then
+			sock_setsend("<td width=25%> <table><tr><td align='center'>"+str(index_to_io_num(index))+"</td></tr>")
+			sock_setsend("<tr><td><input type='checkbox' id='a"+s1+"' "+check_io_enabled(io_num)+" onclick=\x22UT2('a"+s1+"')\x22 disabled> </td></tr>")
+			sock_setsend("<tr><td><input type='checkbox' id='b"+s1+"' "+check_io_control_state(index)+" onclick=\x22UT2('b"+s1+"')\x22 disabled></td></tr>")
+			sock_setsend("<tr><td id='z"+str(index)+"'><table><tr><td width='24' bgcolor='grey'><br></td></tr></table></td></tr></table></td>")
+		else
+			sock_setsend("<td width=25%> <table><tr><td id='z"+str(index)+"'><table><tr><td width='24' bgcolor='grey'><br></td></tr></table></td></tr>")
+			sock_setsend("<tr><td><input type='checkbox' id='b"+s1+"' "+check_io_control_state(index)+"onclick=\x22UT2('b"+s1+"')\x22 disabled></td></tr>")
+			sock_setsend("<tr><td> <input type='checkbox' id='a"+s1+"' "+check_io_enabled(io_num)+"onclick=\x22UT2('a"+s1+"')\x22 disabled> </td></tr>")
+			sock_setsend("<tr><td align='center'>"+str(index_to_io_num(index))+"</td></tr><tr></table></td>")		
+		end if
+	end if
+end sub
+
+'------------------------------------------------------------------------------
+sub print_io_function(socket_num as byte)
+	dim s_num as string(4)
+	dim s as string
+	s_num=str(socket_num)
+
+	#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2
+		select case socket_num
+		case 1,5,9,13:
+			if param_se(socket_num/4)=0 then
+				s="<select id='K"+s_num+"' size =1 STYLE='width:100%' onblur=\x22RT()\x22 onchange=\x22UT3('K"+s_num+"')\x22><option value='0' selected='selected'>GPIO</option><option value='1'>UART(RX/TX)</option><option value='2'>UART(RX/TX/RTS/CTS)</option></select>"
+			else
+				if param_fc(socket_num/4)=0 then
+					s="<select id='K"+s_num+"' size =1 STYLE='width:100%' onblur=\x22RT()\x22 onchange=\x22UT3('K"+s_num+"')\x22><option value='0'>GPIO</option><option value='1' selected='selected'>UART(RX/TX)</option><option value='2' >UART(RX/TX/RTS/CTS)</option></select>"
+				else
+					s="<select id='K"+s_num+"' size =1 STYLE='width:100%' onblur=\x22RT()\x22 onchange=\x22UT3('K"+s_num+"')\x22><option value='0'>GPIO</option><option value='1'>UART(RX/TX)</option><option value='2' selected='selected'>UART(RX/TX/RTS/CTS)</option></select>"
+				end if
+				
+			end if
+		
+		case 3,7,11,15,17,19,21,23,25,27:
+			goto none
+		case else:
+none:
+			s=""
+		end select
+
+	#endif
+	
+	#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2
+		select case socket_num
+		case 1,3,5,7:
+			if param_se(socket_num/2)=0 then
+				s="<select id='K"+s_num+"' size =1 STYLE='width:100%' onblur=\x22RT()\x22 onchange=\x22UT3('K"+s_num+"')\x22><option value='0' selected='selected'>GPIO</option><option value='1'>UART(RX/TX)</option><option value='2'>UART(RX/TX/RTS/CTS)</option></select>"
+			else
+				if param_fc(socket_num/2)=0 then
+					s="<select id='K"+s_num+"' size =1 STYLE='width:100%' onblur=\x22RT()\x22 onchange=\x22UT3('K"+s_num+"')\x22><option value='0'>GPIO</option><option value='1' selected='selected'>UART(RX/TX)</option><option value='2'>UART(RX/TX/RTS/CTS)</option></select>"
+				else
+					s="<select id='K"+s_num+"' size =1 STYLE='width:100%' onblur=\x22RT()\x22 onchange=\x22UT3('K"+s_num+"')\x22><option value='0'>GPIO</option><option value='1'>UART(RX/TX)</option><option value='2' selected='selected'>UART(RX/TX/RTS/CTS)</option></select>"
+				end if
+				
+			end if
+		
+		case 9,11:
+			goto none
+		case else:
+none:
+			s=""
+		end select
+	#endif
+	sock_setsend(s)
+end sub
+
+'------------------------------------------------------------------------------
+public sub print_io_table()
+	dim active_flag as no_yes
+	
+	#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2
+	
+		sock_setsend("<table width='1100' border='1'><tr></tr><tr>")
+		sock_setsend("<td width='70' bgcolor='029DD0'><table><tr><th>State</th></tr><tr><th>Set LOW</th></tr><tr><th>Enabled</th></tr><tr><th>GPIO #</th></tr></table></td>")
+		sock_setsend("<td width='115' align=center></td>")
+		sock_setsend("<td width='115' align=center></td>")
+		sock_setsend("<td width='115' align=center></td>")	
+		
+		's25
+		sock_setsend("<td width='115' align=center id='S25'><table><tr><td width=25%></td><td width=25%></td><td width=25%></td>")	
+		print_io_item(46,YES,YES)
+		sock_setsend("</tr></table></td>")
+		
+		's23
+		sock_setsend("<td width='115' align=center id='S23'><table><tr><td width=25%></td><td width=25%></t40%d>")	
+		print_io_item(45,YES,YES)
+		print_io_item(44,YES,YES)
+		sock_setsend("</tr></table></td>")	
+		
+		's21
+		sock_setsend("<td width='115' align=center id='S21'><table><tr>")
+		print_io_item(43,YES,YES)
+		print_io_item(42,YES,YES)	
+		print_io_item(41,YES,YES)
+		print_io_item(40,YES,YES)
+		sock_setsend("</tr></table></td>")
+		
+		's19
+		sock_setsend("<td width='115' align=center id='S19'><table><tr>")
+		print_io_item(39,YES,YES)
+		print_io_item(38,YES,YES)
+		print_io_item(37,YES,YES)
+		print_io_item(36,YES,YES)
+		sock_setsend("</tr></table></td>")
+
+		's17
+		sock_setsend("<td width='115' align=center id='S17'><table><tr>")
+		print_io_item(35,YES,YES)
+		print_io_item(34,YES,YES)
+		print_io_item(33,YES,YES)
+		print_io_item(32,YES,YES)
+		sock_setsend("</tr></table></td>")
+		
+		sock_setsend("</tr></table>")
+
+		sock_setsend("<table width='1100' border='1'><tr><th width='70' bgcolor='029DD0' align=center>Socket #</th><td width='115' align=center>  </td><td width='115' align=center>  </td>")
+		sock_setsend("<td width='115' align=center>S27</td><td width='115' align=center>S25</td><td width='115' align=center>S23</td><td width='115' align=center>S21</td>")
+		sock_setsend("<td width='115' align=center>S19</td><td width='115' align=center>S17</td></tr></table>")
+
+		sock_setsend("<table width='1100' border='1'><tr><th width='70' bgcolor='029DD0' align=center>Function</th><td width='115' align=center>")
+		print_io_function(31)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(29)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(27)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(25)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(23)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(21)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(19)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(17)
+		sock_setsend("</td></tr></table>")
+		
+		sock_setsend("<table width='1100' border='1'><tr><td colspan='5' id='msg' align='center'><br></td></tr></table>")
+		
+		sock_setsend("<table width='1100' border='1'><tr><th width='70' bgcolor='029DD0' align=center>Function</th>")
+		sock_setsend("<td width='115' align=center>")
+		print_io_function(1)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(3)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(5)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(7)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(9)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(11)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(13)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(15)
+		sock_setsend("</td></tr></table>")		
+
+		sock_setsend("<table width='1100' border='1'><tr><th width='70' bgcolor='029DD0'>Socket #</td><td width= '115' align=center>S1</td><td width= '115' align=center>S3</td>")
+		sock_setsend("<td width='115' align=center>S5</td><td width='115' align=center>S7</td><td width='115' align=center>S9</td><td width='115' align=center>S11</td>")
+		sock_setsend("<td width='115' align=center>S13</td><td width='115' align=center>S15</td></tr></table>")
+		
+		sock_setsend("<table width='1100' border='1'><tr></tr><tr>")
+		sock_setsend("<td width='70' bgcolor='029DD0'><table><tr><th>GPIO #</th></tr><tr><th>Enabled</th></tr><tr><th>Set LOW</th></tr><tr><th>State</th></tr></table></td>")
+		
+		if param_se(0)=0 then
+			active_flag=YES
+		else
+			active_flag=NO
+		end if
+		's1
+		sock_setsend("<td width='115' align=center id='S1'><table><tr>")
+		print_io_item(0,active_flag,NO)
+		print_io_item(1,active_flag,NO)
+		
+		if param_se(0)=1 and param_fc(0)=1 then
+			active_flag=NO
+		else
+			active_flag=YES
+		end if			
+		print_io_item(2,active_flag,NO)
+		print_io_item(3,active_flag,NO)
+		sock_setsend("</tr></table></td>")
+
+		's3
+		sock_setsend("<td width='115' align=center id='S3'><table><tr>")
+		print_io_item(4,YES,NO)
+		print_io_item(5,YES,NO)
+		print_io_item(6,YES,NO)
+		print_io_item(7,YES,NO)
+		sock_setsend("</tr></table></td>")
+
+		if param_se(1)=0 then
+			active_flag=YES
+		else
+			active_flag=NO
+		end if
+		's5
+		sock_setsend("<td width='115' align=center id='S5'><table><tr>")
+		print_io_item(8,active_flag,NO)
+		print_io_item(9,active_flag,NO)
+		
+		if param_se(1)=1 and param_fc(1)=1 then
+			active_flag=NO
+		else
+			active_flag=YES
+		end if		
+		print_io_item(10,active_flag,NO)
+		print_io_item(11,active_flag,NO)
+		sock_setsend("</tr></table></td>")
+
+		's7
+		sock_setsend("<td width='115' align=center id='S7'><table><tr>")
+		print_io_item(12,YES,NO)
+		print_io_item(13,YES,NO)
+		print_io_item(14,YES,NO)
+		print_io_item(15,YES,NO)
+		sock_setsend("</tr></table></td>")
+
+		if param_se(2)=0 then
+			active_flag=YES
+		else
+			active_flag=NO
+		end if
+		's9
+		sock_setsend("<td width='115' align=center id='S9'><table><tr>")
+		print_io_item(16,active_flag,NO)
+		print_io_item(17,active_flag,NO)
+		
+		if param_se(2)=1 and param_fc(2)=1 then
+			active_flag=NO
+		else
+			active_flag=YES
+		end if			
+		print_io_item(18,active_flag,NO)
+		print_io_item(19,active_flag,NO)
+		sock_setsend("</tr></table></td>")
+		
+		's11
+		sock_setsend("<td width='115' align=center id='S11'><table><tr>")
+		print_io_item(20,YES,NO)
+		print_io_item(21,YES,NO)
+		print_io_item(22,YES,NO)
+		print_io_item(23,YES,NO)
+		sock_setsend("</tr></table></td>")
+
+		if param_se(3)=0 then
+			active_flag=YES
+		else
+			active_flag=NO
+		end if
+		's13
+		sock_setsend("<td width='115' align=center id='S13'><table><tr>")
+		print_io_item(24,active_flag,NO)
+		print_io_item(25,active_flag,NO)
+		
+		if param_se(3)=1 and param_fc(3)=1 then
+			active_flag=NO
+		else
+			active_flag=YES
+		end if			
+		print_io_item(26,active_flag,NO)
+		print_io_item(27,active_flag,NO)
+		sock_setsend("</tr></table></td>")
+		
+		's15
+		sock_setsend("<td width='115' align=center id='S15'><table><tr>")
+		print_io_item(28,YES,NO)
+		print_io_item(29,YES,NO)
+		print_io_item(30,YES,NO)
+		print_io_item(31,YES,NO)
+		sock_setsend("</tr></table></td></tr></table>")				
+	#endif
+	
+	#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2
+	
+		sock_setsend("<table width='600' border='1'><tr></tr><tr>")
+		sock_setsend("<td width='70' bgcolor='029DD0'><table><tr><th>State</th></tr><tr><th>Set LOW</th></tr><tr><th>Enabled</th></tr><tr><th>GPIO #</th></tr></table></td>")
+		sock_setsend("<td width='115' align=center></td>")
+		sock_setsend("<td width='115' align=center></td>")
+		
+		's11
+		sock_setsend("<td width='115' align=center id='S11'><table><tr>")
+		print_io_item(23,YES,YES)
+		print_io_item(22,YES,YES)
+		print_io_item(21,YES,YES)
+		print_io_item(20,YES,YES)	
+		sock_setsend("</tr></table></td>")
+		
+		's9
+		sock_setsend("<td width='115' align=center id='S9'><table><tr>")
+		print_io_item(19,YES,YES)
+		print_io_item(18,YES,YES)
+		print_io_item(17,YES,YES)
+		print_io_item(16,YES,YES)
+		sock_setsend("</tr></table></td>")
+
+		sock_setsend("</tr></table>")
+
+		sock_setsend("<table width='600' border='1'><tr><th width='70' bgcolor='029DD0' align=center>Socket #</th><td width='115' align=center>  </td><td width='115' align=center>  </td>")
+		sock_setsend("<td width='115' align=center>S11</td><td width='115' align=center>S9</td></tr></table>")
+
+		sock_setsend("<table width='600' border='1'><tr><th width='70' bgcolor='029DD0' align=center>Function</th>")
+		sock_setsend("<td width='115' align=center>")
+		print_io_function(15)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(13)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(11)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(9)
+		sock_setsend("</td></tr></table>")
+		
+		sock_setsend("<table width='600' border='1'><tr><td colspan='5' id='msg' align='center'><br></td></tr></table>")
+		
+		sock_setsend("<table width='600' border='1'><tr><th width='70' bgcolor='029DD0' align=center>Function</th>")
+		sock_setsend("<td width='115' align=center>")
+		print_io_function(1)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(3)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(5)
+		sock_setsend("</td><td width='115' align=center>")
+		print_io_function(7)
+		sock_setsend("</td></tr></table>")
+		
+		sock_setsend("<table width='600' border='1'><tr><th width='70' bgcolor='029DD0'>Socket #</td><td width= '115' align=center>S1</td><td width= '115' align=center>S3</td>")
+		sock_setsend("<td width='115' align=center>S5</td><td width='115' align=center>S7</td></tr></table>")
+		
+		sock_setsend("<table width='600' border='1'><tr></tr><tr>")
+		sock_setsend("<td width='70' bgcolor='029DD0'><table><tr><th>GPIO #</th></tr><tr><th>Enabled</th></tr><tr><th>Set LOW</th></tr><tr><th>State</th></tr></table></td>")
+		
+		if param_se(0)=0 then
+			active_flag=YES
+		else
+			active_flag=NO
+		end if
+		's1
+		sock_setsend("<td width='115' align=center id='S1'><table><tr>")
+		print_io_item(0,active_flag,NO)
+		print_io_item(1,active_flag,NO)
+		
+		if param_se(0)=1 and param_fc(0)=1 then
+			active_flag=NO
+		else
+			active_flag=YES
+		end if		
+		print_io_item(2,active_flag,NO)
+		print_io_item(3,active_flag,NO)
+		sock_setsend("</tr></table></td>")
+		
+		if param_se(1)=0 then
+			active_flag=YES
+		else
+			active_flag=NO
+		end if
+		's3
+		sock_setsend("<td width='115' align=center id='S3'><table><tr>")
+		print_io_item(4,active_flag,NO)
+		print_io_item(5,active_flag,NO)
+		
+		if param_se(1)=1 and param_fc(1)=1 then
+			active_flag=NO
+		else
+			active_flag=YES
+		end if			
+		print_io_item(6,active_flag,NO)
+		print_io_item(7,active_flag,NO)
+		sock_setsend("</tr></table></td>")
+
+		if param_se(2)=0 then
+			active_flag=YES
+		else
+			active_flag=NO
+		end if
+		's5
+		sock_setsend("<td width='115' align=center id='S5'><table><tr>")
+		print_io_item(8,active_flag,NO)
+		print_io_item(9,active_flag,NO)
+		
+		if param_se(2)=1 and param_fc(2)=1 then
+			active_flag=NO
+		else
+			active_flag=YES
+		end if		
+		print_io_item(10,active_flag,NO)
+		print_io_item(11,active_flag,NO)
+		sock_setsend("</tr></table></td>")
+
+		's7
+		if param_se(3)=0 then
+			active_flag=YES
+		else
+			active_flag=NO
+		end if	
+		sock_setsend("<td width='115' align=center id='S7'><table><tr>")
+		print_io_item(12,active_flag,NO)
+		print_io_item(13,active_flag,NO)
+		
+		if param_se(3)=1 and param_fc(3)=1 then
+			active_flag=NO
+		else
+			active_flag=YES
+		end if		
+		print_io_item(14,active_flag,NO)
+		print_io_item(15,active_flag,NO)
+		sock_setsend("</tr></table></td></tr></table>")	
+	#endif	
+	
+end sub
+
+
+'------------------------------------------------------------------------------
+function is_io_active(index as byte) as no_yes
+	
+	#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2
+		is_io_active=NO
+		select case index
+		's1
+		case 0,1: if param_se(0)=0 then is_io_active=YES
+		case 2,3: if param_se(0)=0 or param_fc(0)=0 then is_io_active=YES
+		's5
+		case 8,9: if param_se(1)=0 then is_io_active=YES
+		case 10,11: if param_se(1)=0 or param_fc(1)=0 then is_io_active=YES
+		's9
+		case 16,17: if param_se(2)=0 then is_io_active=YES
+		case 18,19: if param_se(2)=0 or param_fc(2)=0 then is_io_active=YES
+		's13
+		case 24,25: if param_se(3)=0 then is_io_active=YES
+		case 26,27: if param_se(3)=0 or param_fc(3)=0 then is_io_active=YES
+		case else:
+			is_io_active=yes
+		end select
+	#endif
+	
+	#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2
+		is_io_active=NO
+		select case index
+		's1
+		case 0,1: if param_se(0)=0 then is_io_active=YES
+		case 2,3: if param_se(0)=0 or param_fc(0)=0 then is_io_active=YES
+		's3
+		case 4,5: if param_se(1)=0 then is_io_active=YES
+		case 6,7: if param_se(1)=0 or param_fc(1)=0 then is_io_active=YES
+		's5
+		case 8,9: if param_se(2)=0 then is_io_active=YES
+		case 10,11: if param_se(2)=0 or param_fc(2)=0 then is_io_active=YES
+		's7
+		case 12,13: if param_se(3)=0 then is_io_active=YES
+		case 14,15: if param_se(3)=0 or param_fc(3)=0 then is_io_active=YES
+		case else:
+			is_io_active=yes
+		end select	
+	#endif
+end function

@@ -1,0 +1,9 @@
+declare sub boot()
+declare sub init_serial_ports()
+#if SUPPORTS_DISPLAY
+declare sub print_main_screen()
+declare sub print_time()
+declare sub print_io_screen(index as byte, refresh_all as no_yes)
+declare sub print_io_cursor(index as byte)
+declare sub kp_init()
+#endif

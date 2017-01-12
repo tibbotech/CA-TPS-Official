@@ -1,0 +1,22 @@
+enum en_httpcmd_print_msg
+	EN_HTML_REST_ST,	'reset statistics
+	EN_HTML_RESEND_ST,	'resend statistics events
+	EN_HTML_SERV_DONE,	'service done
+	EN_HTML_PING_ACU,	'ping acu
+	EN_HTML_ATEST_AC,	'activate acu test
+	EN_HTML_ATEST_DAC,	'deactivate acu test
+	EN_HTML_NONE
+end enum
+
+declare html_reboot_flag as no_yes
+declare index_page_socknum as byte
+declare html_httpcmd_msg as en_httpcmd_print_msg
+declare page_code as byte
+
+'------------------------------------------------------------------------------
+declare sub sock_setsend(byref s as string)
+declare sub html_spec_chr_convert(byref http_req_string as string)
+declare function get_http_argument(byref http_req_string as string, byref argument as string) as string
+declare function mod_http_argument(byref http_req_string as string, byref argument as string, byref arg_val as string) as string
+declare sub html_httpcmd_print_msg()
+declare sub html_choose_return_page()

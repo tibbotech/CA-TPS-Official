@@ -1,0 +1,5 @@
+>>SE	Serial port		B,L,0-Disabled;1-Enabled;	^
+>>FC	Flow control	B,L,0-Disabled;1-Enabled;	^
+>>BR	Baudrate		B,L,0-1200bps;1-2400bps;2-4800bps;3-9600bps;4-19200bps;5-38400bps;6-57600bps;7-115200bps;8-150bps;9-300bps;10-600bps;11-28800bps;12-230400bps;13-460800bps;	^
+>>PR	Parity			B,L,0-None;1-Even;2-Odd;3-Mark;4-Space;	^
+>>BB	Data bits		B,L,0-7 bits;1-8 bits;	^

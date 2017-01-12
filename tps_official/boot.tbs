@@ -1,0 +1,691 @@
+include "global.tbh"
+
+#if SUPPORTS_DISPLAY
+	const IO_WIDTH=15
+	declare sub lcd_init()
+	declare sub kp_init()
+	declare sub print_main_screen()
+	declare sub print_main_icon()
+#endif
+'====================================================================
+public sub boot()
+	dim s as string
+	dim f as byte
+	
+	#if WLN_AVAILABLE
+		dim wln_result as en_wln_status_codes
+	#endif 
+		
+	io.num=RED_IO_NUM_1
+	io.enabled=YES
+	
+	io.num=GREEN_IO_NUM_1
+	io.enabled=YES
+	
+	reboot_flag=NO
+	reboot_timer=0
+	agg_port_fallback_count=AGG_PORT_FALLBACK_MAX
+
+	'indicate that we are starting the boot
+	pat.channel=0
+	pat.play(PAT_BOTH_LOOP,PL_PAT_CANINT)
+	
+	#if SUPPORTS_DISPLAY
+		lcd_init()
+		lcd_clear(0,0,lcd.width,lcd.height)
+		lan_network_state=255
+	#endif
+	
+	if stg_start()<>EN_STG_STATUS_OK then
+		pat.play(PAT_BLINK_BOTH_TOGETHER_FAST,PL_PAT_NOINT)
+		exit sub
+	else
+		if stg_check_all(s)<>EN_STG_STATUS_OK then
+			device_setting_init(EN_STG_INIT_MODE_OVERRIDE)
+			sys.reboot
+		end if
+	end if
+
+	error_mode=NO
+	if stg_check_all(s)<>EN_STG_STATUS_OK then
+		if device_setting_init(EN_STG_INIT_MODE_NORMAL)<>ok then
+			declare_error_mode()
+		end if
+	end if
+	
+	html_session_init()
+
+	'sntp
+	param_te=stg_get("TE",0)
+	if param_te=1 then
+		last_sntp_date=65535
+		s_sock=sock_get("SNTP")
+		sntp_init()
+	end if
+	
+	'aggregate
+	param_ar=val(stg_get("AR",0))
+	if param_ar=1 and param_te=1 then
+		'disable time server if aggregate is enabled
+		param_te=0
+	end if
+
+	#if SUPPORTS_GPRS
+		param_ge=stg_get("GE",0)
+
+	#endif
+	
+	if net.linkstate<>PL_NET_LINKSTAT_NOLINK then
+		#if DEV_DEBUG_PRINT
+			dev_debugprint("Set current interface to Ethernet")
+		#endif
+		interface_ready(PL_SOCK_INTERFACE_NET)=YES
+		current_interface=PL_SOCK_INTERFACE_NET
+	end if
+	
+	current_interface=PL_SOCK_INTERFACE_NET
+	'net. parameters and DHCP
+	'net_cmd
+	net_cmd_init()
+	init_x_flags()	
+	
+	param_dh=val(stg_get("DH",0))
+	
+	
+	set_net_ip(PL_SOCK_INTERFACE_NET)
+	if param_dh<>NO then
+		ip_configured(PL_SOCK_INTERFACE_NET)=NO
+		dhcp_start(PL_SOCK_INTERFACE_NET,net.ip,"")
+	else
+		declare_ip_set(PL_SOCK_INTERFACE_NET)
+		ip_configured(PL_SOCK_INTERFACE_NET)=YES
+	end if
+
+	#if WLN_AVAILABLE
+		'Wi-Fi parameters and DHCP
+		wln_error=NO
+		param_we=stg_get("WE",0)
+		set_net_ip(PL_SOCK_INTERFACE_WLN)
+		
+		#if SUPPORTS_DISPLAY
+			wln_network_state=255
+		#endif
+		
+		wln_dev_rescan_tmr=0
+		rssi_update_timer=RSSI_UPDATE_TIMER_CTR		
+		
+		if param_we<>WE_DISABLED then
+			num_wln_failures=0
+			param_wd=val(stg_get("WD",0))
+			if param_wd<>NO then
+				ip_configured(PL_SOCK_INTERFACE_WLN)=NO
+				dhcp_start(PL_SOCK_INTERFACE_WLN,wln.ip,"")
+			else
+				ip_configured(PL_SOCK_INTERFACE_WLN)=YES
+				declare_ip_set(PL_SOCK_INTERFACE_WLN)
+			end if
+			param_wa=stg_get("WA",0)
+			param_ws=val(stg_get("WS",0))
+
+			select case param_ws
+			case WLN_SECURITY_MODE_DISABLED:
+				wln_password=""
+			case WLN_SECURITY_MODE_WEP64,WLN_SECURITY_MODE_WEP128:
+				wln_password=stg_get("WP",0)
+		#if WLN_WPA	
+			case else:
+				if param_ws=stg_get("wS",0) and param_wa=stg_get("wA",0) and stg_get("WP",0)=stg_get("wP",0) and stg_sg("WK",0,wln_password,EN_STG_GET)=EN_STG_STATUS_OK and len(wln_password)=32 then
+				else
+				#if SUPPORTS_DISPLAY
+					'turn on backlight
+					io.num=PL_IO_NUM_54 
+					io.state=LOW
+					lcd_clear(0,0,lcd.width,lcd.height)
+					romfile.open(LCD_STD_FONT)
+					lcd.setfont(romfile.offset)	
+					lcd.textverticalspacing=2
+					lcd.texthorizontalspacing=2
+					lcd_print_msg(SYS_CALCULATE_WPA_KEY,0,0,lcd.width,lcd.height-lcd.fontheight*2,PL_LCD_TEXT_ALIGNMENT_MIDDLE_CENTER,no)
+				#endif	
+					wln_password=wln_wpa_mkey_get(stg_get("WP",0),stg_get("WA",0))
+					stg_set("WK",0,wln_password)
+					stg_set("wS",0,str(param_ws))
+					stg_set("wA",0,param_wa)
+					stg_set("wP",0,stg_get("WP",0))
+				end if
+		#endif	
+			end select
+			
+			if param_we=WE_ENABLED_PERMANENT then
+				#if DEV_DEBUG_PRINT
+					dev_debugprint("Start Wi-Fi")
+				#endif
+				
+				wln_result=wln_start(param_wa,param_ws,wln_password,PL_WLN_DOMAIN_FCC,no,PL_WLN_ASCAN_INFRASTRUCTURE)
+				
+				if wln_result<>WLN_STATUS_OK then
+					#if DEV_DEBUG_PRINT
+						dev_debugprint("Wi-Fi MALFUNCTIONED (could not start)")
+					#endif
+					wln_error=YES
+				end if
+				wln_already_started=YES
+				
+				#if SUPPORTS_DISPLAY
+					select case wln_result
+					case WLN_STATUS_OK:
+						wln_network_state=NETWORK_WLN_JOINING
+						
+					case WLN_STATUS_INVALID_WEP_KEY:
+						wln_network_state=NETWORK_WLN_INVALID_WKEY
+					
+					case else:
+						wln_network_state=NETWORK_WLN_FATAL_ERROR
+
+					end select
+				#endif
+			else
+				wln_stop()
+				wln_already_started=NO
+				
+				#if SUPPORTS_DISPLAY
+					print_wln_network_state(NETWORK_WLN_DISABLED)
+				#endif
+			end if
+		end if
+	#else
+		wln_error=NO
+	#endif
+	
+	'GPRS parameters
+	#if SUPPORTS_GPRS
+		gprs_error=NO
+		if param_ge<>GE_DISABLED then
+			param_ga=stg_get("GA",0)
+			param_gn=stg_get("GN",0)
+			param_gu=stg_get("GU",0)
+			param_gp=stg_get("GP",0)			
+			if param_ge=GE_ENABLED_PERMANENT then
+				#if DEV_DEBUG_PRINT
+					dev_debugprint("Start GPRS")
+				#endif
+				if gprs_start(param_ga,param_gn,param_gu,param_gp)<>GPRS_STATUS_OK then
+					#if DEV_DEBUG_PRINT
+						dev_debugprint("GPRS MALFUNCTIONED (could not start)")
+					#endif
+					gprs_error=YES
+				end if
+				gprs_already_started=YES
+			else
+				gprs_already_started=NO
+			end if
+		end if
+
+	#endif
+	
+	#if SIGNAL_STRENGTH_INDICATION
+		signal_strength_indication_init()
+	#endif	
+	
+	'serial port
+	for f=0 to 3
+		param_se(f)=val(stg_get("SE",f))
+		param_fc(f)=val(stg_get("FC",f))
+		param_br(f)=val(stg_get("BR",f))
+		param_pr(f)=val(stg_get("PR",f))
+		param_bb(f)=val(stg_get("BB",f))
+	next f
+	
+	init_serial_ports()
+	
+	'HTTP sockets
+	for f=0 to NUM_HTTP_SOCKETS-1
+		sock_http(f)=sock_get("HTTP")
+		sock.num=sock_http(f)
+		sock.protocol=PL_SOCK_PROTOCOL_TCP
+		sock.httpportlist="80"
+		sock.connectiontout=600
+		sock.allowedinterfaces="NET,WLN,PPP"
+		sock.inconmode=PL_SOCK_INCONMODE_ANY_IP_ANY_PORT
+		sock.reconmode= PL_SOCK_RECONMODE_0
+	next f
+	
+	if http_buff_rq(HTTP_BUFF_ALLOCATE)<>OK then
+		'insufficient memory
+	end if
+	
+	html_httpcmd_msg=EN_HTML_NONE
+	
+	'io controls
+	for f=0 to NUM_OF_IO-1
+		param_io(f).io_enabled=val(stg_get("I"+str(f),0))
+		param_io(f).io_output=val(stg_get("I"+str(f),1))
+		io.num=index_to_io_num(f)
+		param_io(f).prev_io_state=io.state
+		param_io(f).prev_enabled=io.enabled
+	next f
+
+	#if USE_DNS
+		sock_dns=sock_get("DNS")
+		dns_start(sock_dns)
+		server_ip_obtain=NO
+	#endif	
+	
+#if SUPPORTS_DISPLAY
+
+	io_index=0
+	kp_init()
+	lcd.forecolor=LCD_FORECOLOR
+	lcd.backcolor=LCD_BACKCOLOR
+	lcd_clear(0,0,lcd.width,lcd.height)		
+	print_main_screen()
+	print_time()
+	print_io_cursor(io_index)
+	print_main_icon()
+	print_wifi()
+	
+	if param_dh=NO then
+		print_lan_network_state(NETWORK_DHCP_FIXED_IP)
+	end if
+	
+	#if WLN_AVAILABLE
+		if param_we=WE_DISABLED then
+			print_wln_network_state(NETWORK_WLN_DISABLED)
+		end if
+	#endif
+	'turn on backlight
+	io.num=PL_IO_NUM_54 
+	io.state=LOW
+	
+#endif	
+	
+	'don't have established Ethernet link by now? Assume there is no link
+	if net.linkstate=PL_NET_LINKSTAT_NOLINK then
+		ethernet_link_state_change(PL_NET_LINKSTAT_NOLINK)
+	end if
+	
+	'indicate that the boot is completed
+	pat.channel=0
+	pat.play(PAT_THREE_BOTH,PL_PAT_CANINT)
+	beep.divider=BEEP_DIVIDER
+	beep.play(BEEP_SHORT,PL_BEEP_CANINT)
+	
+end sub
+
+'------------------------------------------------------------------------------
+sub init_serial_ports()
+	dim i as byte
+	
+	for i=0 to 3
+		if param_se(i)=1 then
+			ser.num=i
+			ser.enabled=NO
+			baudrate_set(param_br(i))
+			ser.parity=param_pr(i)
+			ser.bits=param_bb(i)
+			ser.flowcontrol=param_fc(i)
+			ser.mode=PL_SER_MODE_UART
+			ser.interface=PL_SER_SI_FULLDUPLEX
+			ser.interchardelay=100
+			ser.rxbuffrq(1)
+			ser.txbuffrq(1)			
+			sys.buffalloc()			
+			ser.enabled=YES
+		end if
+	next i
+	
+end sub
+
+#if SUPPORTS_DISPLAY
+'------------------------------------------------------------------------------
+sub lcd_init()
+	'----- INIT LCD -----
+	
+	lcd.width=320
+	lcd.height=240
+	
+	'RST
+	io.num=PL_IO_NUM_55
+	io.enabled=YES
+
+	'DC
+	io.num=PL_IO_NUM_43
+	io.enabled=YES
+
+	'WR
+	io.num=PL_IO_NUM_42
+	io.enabled=YES
+
+	'RD
+	io.num=PL_IO_NUM_41
+	io.enabled=YES
+
+	'CS
+	io.num=PL_IO_NUM_40
+	io.enabled=YES
+
+	lcd.iomapping="55,43,42,41,40,0" 'RST,DC,WR,RD,CS,data_bus
+	lcd.rotated=YES 'yes, the LCD is installed up side down
+	lcd.enabled=YES
+
+	'backlight OFF
+	io.num=PL_IO_NUM_54 
+	io.enabled=YES
+	io.state=HIGH
+end sub
+
+'------------------------------------------------------------------------------
+sub kp_init()
+	'----- KEYPAD -----
+	io.num=PL_IO_NUM_44
+	io.enabled=YES
+	io.state=LOW
+	
+	kp.returnlinesmapping="36,37,38,39"
+	kp.enabled=YES
+end sub
+
+'------------------------------------------------------------------------------
+public sub print_main_screen()
+	dim s as string
+	
+	if enter_menu=YES then exit sub
+	
+	lcd.textalignment=PL_LCD_TEXT_ALIGNMENT_MIDDLE_CENTER
+	romfile.open(LCD_STD_FONT)
+	lcd.setfont(romfile.offset)	
+	lcd.textverticalspacing=2
+	lcd.texthorizontalspacing=2
+	
+	lcd.forecolor=BG_BLUE
+	lcd.fill(0,63,lcd.width,lcd.height-150)
+
+	lcd.forecolor=LCD_FORECOLOR
+	lcd.backcolor=BG_BLUE
+	
+	print_lan_network_state(NETWORK_INIT)
+	#if WLN_AVAILABLE
+		print_wln_network_state(NETWORK_INIT)
+	#endif
+	
+	s="Enter Menu >>"
+	lcd.textalignment=PL_LCD_TEXT_ALIGNMENT_BOTTOM_RIGHT
+	
+	lcd.printaligned(s, 0,124,lcd.width,28)
+	
+	print_io_screen(0, yes)
+
+end sub
+
+'------------------------------------------------------------------------------
+public sub print_io_screen(index as byte, refresh_all as no_yes)
+	dim i as byte
+	dim x,y,w,h,x1,y1 as word
+	dim print_ser_state as no_yes
+	dim s as string(4)
+	
+	if enter_menu=YES then exit sub
+		
+	lcd.textalignment=PL_LCD_TEXT_ALIGNMENT_MIDDLE_CENTER
+	romfile.open(SMALL_FONT)
+	lcd.setfont(romfile.offset)	
+	lcd.textverticalspacing=1
+	lcd.texthorizontalspacing=1
+
+	if refresh_all=yes then
+		i=0
+	else
+		i=index
+	end if
+	
+	do	
+		print_ser_state=NO
+		io.num=index_to_io_num(i)
+
+		if i<8 then
+			if i>3 then
+				x=17+i*IO_WIDTH+15
+			else
+				x=17+i*IO_WIDTH
+			end if
+			y=lcd.height-54		
+			x1=x+IO_WIDTH-1		
+			if param_se(0)=1 then
+				select case i
+				case 0:
+					print_ser_state=YES
+					s="R/T"
+				case 1:
+					goto print_io_num
+				case 2:
+					if param_fc(0)=1 then
+						print_ser_state=YES
+						s="R/C"
+					end if
+				case 3:
+					if param_fc(0)=1 then
+						goto print_io_num
+					end if
+				end select
+			end if	
+			if param_se(1)=1 then	
+				select case i			
+				case 4:
+					print_ser_state=YES
+					s="R/T"
+				case 5:
+					goto print_io_num				
+				case 6:
+					if param_fc(1)=1 then
+						print_ser_state=YES
+						s="R/C"
+					end if
+				case 7:
+					if param_fc(1)=1 then
+						goto print_io_num
+					end if
+				end select
+			end if
+		end if
+		
+		if i>7 and i<16 then
+			if i>11 then
+				x=17+(i+2)*IO_WIDTH+15
+			else
+				x=17+(i+2)*IO_WIDTH
+			end if
+			y=lcd.height-54
+			y1=y+IO_WIDTH
+			x1=x+IO_WIDTH-1
+			if param_se(2)=1 then
+			select case i
+				case 8:
+					print_ser_state=YES
+					s="R/T"
+
+				case 9:
+					goto print_io_num
+					
+				case 10:
+					if param_fc(2)=1 then
+						print_ser_state=YES
+						s="R/C"
+					end if
+				case 11:
+					if param_fc(2)=1 then
+						goto print_io_num
+					end if
+				end select
+			end if
+			
+			if param_se(3)=1 then
+				select case i
+				case 12:
+					print_ser_state=YES
+					s="R/T"
+
+				case 13:
+					goto print_io_num
+										
+				case 14:
+					if param_fc(3)=1 then
+						print_ser_state=YES
+						s="R/C"
+					end if
+				case 15:
+					if param_fc(3)=1 then
+						goto print_io_num
+					end if						
+				end select
+			end if			
+		end if
+		
+		if i>15 then
+			if i>19 then
+				x1=17+(34-i)*IO_WIDTH
+			else
+				x1=17+(34-i)*IO_WIDTH+15
+			end if
+			y=15
+			x=x1-IO_WIDTH+1
+		end if
+
+		h=IO_WIDTH-2
+		y1=y+IO_WIDTH
+		if print_ser_state=YES then
+			x1=x+IO_WIDTH*2-1
+			w=IO_WIDTH*2-4
+			
+			lcd.forecolor=LCD_FORECOLOR
+			lcd.backcolor=BG_BLUE
+			goto print_io_state
+		else
+			w=IO_WIDTH-2		
+			lcd.forecolor=LCD_FORECOLOR
+			if io.state=high then
+				lcd.backcolor=BG_GREEN
+			else
+				lcd.backcolor=BG_RED
+			end if
+			
+			if param_io(i).io_enabled=YES then
+				s="O"
+			else
+				s="I"
+			end if
+		end if
+
+print_io_state:
+		lcd.filledrectangle(x,y,x1,y1)
+		lcd.printaligned(s, x+1,y+1,w,h)
+
+print_io_num:
+		if refresh_all=YES then
+			if i<16 then
+				y=y-IO_WIDTH
+			else
+				y=y+IO_WIDTH
+			end if
+			lcd.forecolor=LCD_FORECOLOR
+			lcd.backcolor=LCD_BACKCOLOR
+			lcd.printaligned(str(index_to_io_num(i)), x,y,IO_WIDTH,IO_WIDTH)	
+		end if
+		
+		if refresh_all=no then
+			exit do
+		else
+			i=i+1
+		end if
+	loop while i<NUM_OF_IO
+end sub
+
+'------------------------------------------------------------------------------
+public sub print_io_cursor(index as byte)
+	dim x, y as word
+	
+	if enter_menu=YES then exit sub
+		
+	lcd.textalignment=PL_LCD_TEXT_ALIGNMENT_MIDDLE_CENTER
+	romfile.open("cursor.bmp")
+	
+	lcd.forecolor=LCD_FORECOLOR
+	lcd.backcolor=LCD_BACKCOLOR	
+	lcd_clear(0,lcd.height-54-IO_WIDTH*2,lcd.width,IO_WIDTH)
+	lcd_clear(0,15+IO_WIDTH*2,lcd.width,IO_WIDTH)
+	
+	if index<8 then
+		if index>3 then
+			x=17+index*IO_WIDTH+15
+		else
+			x=17+index*IO_WIDTH
+		end if
+		y=lcd.height-54-IO_WIDTH
+		
+		lcd.bmp(romfile.offset,x,y-IO_WIDTH,0,0,IO_WIDTH,IO_WIDTH)
+	end if
+	
+	if index>7 and index<16 then
+		if index>11 then
+			x=17+(index+2)*IO_WIDTH+15
+		else
+			x=17+(index+2)*IO_WIDTH
+		end if
+		y=lcd.height-54-IO_WIDTH
+		lcd.bmp(romfile.offset,x,y-IO_WIDTH,0,0,IO_WIDTH,IO_WIDTH)
+
+	end if
+	
+	if index>15 then
+		if index>19 then
+			x=17+(34-index)*IO_WIDTH
+		else
+			x=17+(34-index)*IO_WIDTH+15
+		end if
+		y=15+IO_WIDTH
+		
+		lcd.bmp(romfile.offset,x-IO_WIDTH,y+IO_WIDTH,0,0,IO_WIDTH,IO_WIDTH)
+	end if
+
+end sub
+
+'------------------------------------------------------------------------------
+public sub print_time()
+	dim s1,s2 as string(32)
+	dim b1 as byte
+	
+	if enter_menu=YES then exit sub
+		
+	lcd.textalignment=PL_LCD_TEXT_ALIGNMENT_TOP_LEFT
+	romfile.open(SMALL_FONT)
+	lcd.setfont(romfile.offset)	
+	lcd.textverticalspacing=1
+	lcd.texthorizontalspacing=1
+	lcd.forecolor=LCD_FORECOLOR
+	lcd.backcolor=LCD_BACKCOLOR
+	
+	device_settings_sg("TD",0,s1,b1,DEVICE_GET)
+	device_settings_sg("TT",0,s2,b1,DEVICE_GET)
+	
+	lcd.printaligned(s1,1,1,60,10)
+	lcd.printaligned(s2,1,10,60,10)
+end sub
+
+'------------------------------------------------------------------------------
+sub print_main_icon()
+	dim x,y,w as word
+	
+	if enter_menu=YES then exit sub
+		
+	x=6
+	y=lcd.height-32
+	w=90
+
+	romfile.open("io_icon.bmp")
+
+	lcd_clear(1,y-1,lcd.width-1,33)
+	lcd.bmp(romfile.offset,x,y,0,0,40,31)
+	lcd.bmp(romfile.offset,x+w,y,40,0,40,31)
+	lcd.bmp(romfile.offset,x+w*2,y,80,0,40,31)
+	lcd.bmp(romfile.offset,x+w*3,y,120,0,40,31)
+end sub
+#endif

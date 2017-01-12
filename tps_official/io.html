@@ -1,0 +1,335 @@
+<?
+	include "global.tbh"
+	declare it_was_save as no_yes
+	dim flag as ok_ng
+?>
+
+<html>
+<HEAD>
+<META HTTP-EQUIV="Expires" CONTENT="Tue, 01 Jan 1980 1:00:00 GMT">
+<META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+<link rel="stylesheet" type="text/css" href="tpp_demo.css" />
+
+<style type="text/css">
+td.disabled
+{
+background-color:#808080;
+} 
+
+</style>
+
+<script type="text/javascript">
+
+var xmlhttp;
+var t;
+
+function IndexPage()
+{
+	window.top.location.replace("Index.html")
+}
+
+function UT3(socket_num)
+{
+clearTimeout(t);
+if (window.XMLHttpRequest)
+	{// code for IE7+, Firefox, Chrome, Opera, Safari
+		xmlhttp=new XMLHttpRequest();
+	} 
+	else
+	{// code for IE6, IE5
+		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}
+  
+	xmlhttp.onreadystatechange=function()
+	{
+		if (xmlhttp.readyState==4 && xmlhttp.status==200)
+		{
+			if (xmlhttp.responseText=="INVALID SESSION ID")
+			{
+				IndexPage();
+			}
+			else
+			{
+				var a=xmlhttp.responseText;
+				var y;
+				var k;
+				var j;
+				var i;
+				
+<?#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2?>	
+				switch(socket_num)
+				{
+				case "K1":
+					j=0;
+					break;
+				case "K5":
+					j=8;	
+					break;
+				case "K9":
+					j=16;
+					break;
+				case "K13":
+					j=24;
+				}				
+
+<?#endif?>
+<?#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2?>
+				switch(socket_num)
+				{
+				case "K1":
+					j=0;
+					break;
+				case "K3":
+					j=4;	
+					break;
+				case "K5":
+					j=8;
+					break;
+				case "K7":
+					j=12;
+				}	
+
+<?#endif?>
+
+				if (a.charAt(0)=="0")
+				{
+					for(i=j;i<j+2;i++)
+					{
+						y="a"+i.toString();
+						k=document.getElementById(y);
+						k.disabled=false;
+						y="b"+i.toString();
+						k=document.getElementById(y);
+						k.disabled=false;
+					}
+				}
+				else
+				{
+					for(i=j;i<j+2;i++)
+					{
+						y="a"+i.toString();
+						k=document.getElementById(y);
+						k.disabled=true;
+						y="b"+i.toString();
+						k=document.getElementById(y);
+						k.disabled=true;
+					}				
+				}
+				
+				j=j+2;
+				if (a.charAt(0)=="0"||a.charAt(1)=="0")
+				{
+					for(i=j;i<j+2;i++)
+					{
+						y="a"+i.toString();
+						k=document.getElementById(y);
+						k.disabled=false;
+						y="b"+i.toString();
+						k=document.getElementById(y);
+						k.disabled=false;
+					}				
+				}
+				else
+				{
+					for(i=j;i<j+2;i++)
+					{
+						y="a"+i.toString();
+						k=document.getElementById(y);
+						k.disabled=true;
+						y="b"+i.toString();
+						k=document.getElementById(y);
+						k.disabled=true;
+
+					}				
+				}	
+			}
+		}
+	}
+	var x=document.getElementById(socket_num);
+	xmlhttp.open("GET","q.html?session=<?sock_setsend(login_data)?>&i="+x.id+"&s="+x.value+"&q="+Math.random(),true);
+	xmlhttp.send();	
+	x.blur();
+}
+
+function RT()
+{
+	clearTimeout(t);
+	t=setTimeout("UT()",2000);
+}
+
+function UT2(io_num)
+{
+	if (window.XMLHttpRequest)
+	{// code for IE7+, Firefox, Chrome, Opera, Safari
+		xmlhttp=new XMLHttpRequest();
+	} 
+	else
+	{// code for IE6, IE5
+		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}
+  
+	xmlhttp.onreadystatechange=function()
+	{
+		if (xmlhttp.readyState==4 && xmlhttp.status==200)
+		{
+			if (xmlhttp.responseText=="INVALID SESSION ID")
+			{
+				IndexPage();	
+			}
+			else
+			{	
+				var a=xmlhttp.responseText;
+				var y;
+				var k;
+
+				y="z"+io_num.substr(1);
+				switch(a)
+				{
+				case "0":
+					k="<table><tr><td width='24' bgcolor='red' align='center'><font color='white'> L </font></td></tr></table>";
+					break;
+				case "1":
+					k="<table><tr><td width='24' bgcolor='green' align='center'><font color='white'> H </font></td></tr></table>";			
+					break;
+				default:
+					k="<table><tr><td width='24' bgcolor='grey' align='center'><br></td></tr></table>";
+				}
+				document.getElementById(y).innerHTML=k;
+			}
+		}
+	}
+
+	var x=document.getElementById(io_num);
+	if (x.checked==true)
+	{
+		xmlhttp.open("GET","q.html?session=<?sock_setsend(login_data)?>&i="+x.id+"&s=1&q="+Math.random(),true);
+	}
+	else
+	{
+		xmlhttp.open("GET","q.html?session=<?sock_setsend(login_data)?>&i="+x.id+"&s=0&q="+Math.random(),true);
+	}
+	xmlhttp.send();	
+}
+
+function UT()
+{	
+	if (window.XMLHttpRequest)
+	{// code for IE7+, Firefox, Chrome, Opera, Safari
+		xmlhttp=new XMLHttpRequest();
+	} 
+	else
+	{// code for IE6, IE5
+		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}
+  
+	xmlhttp.onreadystatechange=function()
+	{
+		if (xmlhttp.readyState==4 && xmlhttp.status==200)
+		{
+			if (xmlhttp.responseText=="INVALID SESSION ID")
+			{
+				IndexPage();	
+			}
+			else
+			{	
+				var x=xmlhttp.responseText;
+				var i;
+				var y;
+				var k;
+				var w;
+				var j=<?sock_setsend(NUM_OF_IO)?>;
+				for (i=0;i<j;i++)
+				{
+					y="z"+i.toString();
+
+					switch(x.charAt(i))
+					{
+					case "0":
+						k="<table><tr><td width='24' bgcolor='red' align='center'><font color='white'> L </font></td></tr></table>";
+						break;
+					case "1":
+						k="<table><tr><td width='24' bgcolor='green' align='center'><font color='white'> H </font></td></tr></table>";			
+						break;
+					default:
+						k="<table><tr><td width='24' bgcolor='grey' align='center'><br></td></tr></table>";
+					}
+					document.getElementById(y).innerHTML=k;
+				}
+				
+				for (i=0;i<j;i++)
+				{
+					y="a"+i.toString();
+					w=document.getElementById(y);
+					switch(x.charAt(i+j))
+					{
+					case "0":
+						w.checked=false;
+						break;
+					case "1":
+						w.checked=true;			
+						break;
+					}
+				}
+			
+				for (i=0;i<j;i++)
+				{
+					y="b"+i.toString();
+					w=document.getElementById(y);
+					switch(x.charAt(i+j*2))
+					{
+					case "0":
+						w.checked=false;
+						break;
+					case "1":
+						w.checked=true;			
+						break;
+					}
+				}				
+			}
+		}
+	}	
+	xmlhttp.open("GET","q.html?session=<?sock_setsend(login_data)?>&q="+Math.random(),true);
+	xmlhttp.send();
+	clearTimeout(t);
+	t=setTimeout("UT()",5000);
+}
+
+
+</script>
+</HEAD>
+
+<body <?flag=html_login_verify(yes,yes)
+	if flag=OK then sock_setsend(" onload='UT()'")
+?>>
+	
+<? 
+	if flag=NG then goto finish
+?>
+<div>
+<br>
+
+	<table align=center border="0" cellspacing="0" cellpadding="0" >
+		<tr><td width = 80%> <h3> IO Control</h3> </td></tr>
+		
+		<tr><td>	
+		<table align='center' border="0" cellspacing="0" cellpadding="0" >
+			<form id="myForm" action="io.html?" method="get">
+
+			<tr><td id='my_table'><table>
+				<? 
+				print_io_table()
+				?>			
+			</table></td></tr>
+			
+		</form>
+		</table>		
+		</td></tr>
+		
+		
+	</table>	
+</div>
+<?finish:
+
+?>
+</body>
+</html>
