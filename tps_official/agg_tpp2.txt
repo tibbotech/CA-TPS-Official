@@ -47,7 +47,7 @@
 >>si	<R=<si><<<num><I><S=<Port 1=0><Port 2=1><Port 3=2><Port 4=3>>><<data><S>><M=1><X=1>><<M=0><X=0>><Serial Port Output><^><remote>>
 ==events	root
 >>io	I2	<R=<io><<<num><S><D=IO Num>><<st><S><D=IO State><S=<Low=0><High=1>>><M=1><X=1>><IO State Changed><^><2><remote>>
->>ser	I2	<R=<ser><<<num><I><D=Serial port><S=<Port 1=0><Port 2=1><Port 3=2><Port 4=3>>><<data><S><D=Data>><M=1><X=1>><Serial Data Recieved><^><2><remote>>
+>>ser	I2	<R=<ser><<<num><I><D=Serial port><S=<Port 1=0><Port 2=1><Port 3=2><Port 4=3>>><<data><S><D=Data>><<hex><S><D=Hex>><M=1><X=1>><Serial Data Recieved><^><2><remote>>
 #define TBL_TIMESTAMP 1
 #define STG_TIMESTAMP 1
 #define AGG_DESCRIPTOR_FILE "agg_tpp2.txt"

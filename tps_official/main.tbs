@@ -471,10 +471,19 @@ end sub
 '------------------------------------------------------------------------------
 sub on_ser_data_arrival()
 	dim s as string
+	dim param as string
+	dim hex_s as string
+	dim i as byte
 	
 	s=""
-	agg_record_encode(s,str(ser.num))
-	agg_record_encode(s,ser.getdata(255))
+	agg_record_encode(s,str(ser.num)) 
+	param = ser.getdata(255)
+	agg_record_encode(s,param)
+	hex_s = ""
+	for i = 1 to len(param)
+		hex_s = hex_s + hex(asc(mid(param, i, 1))) + " "
+	next i
+	agg_record_encode(s,hex_s)
 	agg_fire_instant_event("","ser",s,2)
 
 	#if SUPPORTS_GPRS
