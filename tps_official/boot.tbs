@@ -146,8 +146,13 @@ public sub boot()
 					lcd.textverticalspacing=2
 					lcd.texthorizontalspacing=2
 					lcd_print_msg(SYS_CALCULATE_WPA_KEY,0,0,lcd.width,lcd.height-lcd.fontheight*2,PL_LCD_TEXT_ALIGNMENT_MIDDLE_CENTER,no)
-				#endif	
-					wln_password=wln_wpa_mkey_get(stg_get("WP",0),stg_get("WA",0))
+				#endif					
+					wln_init()
+					if  wln.getmoduletype() = PL_WLN_MODULE_TYPE_GA1000 then
+						wln_password=wln_wpa_mkey_get(stg_get("WP",0),stg_get("WA",0))	
+					else 
+						wln_password=stg_get("WP",0)						
+					end if
 					stg_set("WK",0,wln_password)
 					stg_set("wS",0,str(param_ws))
 					stg_set("wA",0,param_wa)
