@@ -409,7 +409,7 @@ public sub proc_html_io_event()
 			s2=right(s1,len(s1)-1)
 			s1=get_http_argument(sock.httprqstring,"s=")
 		
-		#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2
+		#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2 or PLATFORM_ID=TPP3N
 			i=val(s2)/4
 			
 			select case s2
@@ -432,7 +432,7 @@ public sub proc_html_io_event()
 			end select
 		#endif
 		
-		#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2
+		#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2 or PLATFORM_ID=TPP2N
 			i=val(s2)/2
 			
 			select case s2
@@ -505,7 +505,7 @@ sub print_io_function(socket_num as byte)
 	dim s as string
 	s_num=str(socket_num)
 
-	#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2
+	#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2 or PLATFORM_ID=TPP3N
 		select case socket_num
 		case 1,5,9,13:
 			if param_se(socket_num/4)=0 then
@@ -528,7 +528,7 @@ none:
 
 	#endif
 	
-	#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2
+	#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2 or PLATFORM_ID=TPP2N
 		select case socket_num
 		case 1,3,5,7:
 			if param_se(socket_num/2)=0 then
@@ -556,7 +556,7 @@ end sub
 public sub print_io_table()
 	dim active_flag as no_yes
 	
-	#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2
+	#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2 or PLATFORM_ID=TPP3N
 	
 		sock_setsend("<table width='1100' border='1'><tr></tr><tr>")
 		sock_setsend("<td width='70' bgcolor='029DD0'><table><tr><th>State</th></tr><tr><th>Set LOW</th></tr><tr><th>Enabled</th></tr><tr><th>GPIO #</th></tr></table></td>")
@@ -760,7 +760,7 @@ public sub print_io_table()
 		sock_setsend("</tr></table></td></tr></table>")				
 	#endif
 	
-	#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2
+	#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2 or PLATFORM_ID=TPP2N
 	
 		sock_setsend("<table width='600' border='1'><tr></tr><tr>")
 		sock_setsend("<td width='70' bgcolor='029DD0'><table><tr><th>State</th></tr><tr><th>Set LOW</th></tr><tr><th>Enabled</th></tr><tr><th>GPIO #</th></tr></table></td>")
@@ -901,7 +901,7 @@ end sub
 '------------------------------------------------------------------------------
 function is_io_active(index as byte) as no_yes
 	
-	#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2
+	#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2 or PLATFORM_ID=TPP3N
 		is_io_active=NO
 		select case index
 		's1
@@ -921,7 +921,7 @@ function is_io_active(index as byte) as no_yes
 		end select
 	#endif
 	
-	#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2
+	#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2 or PLATFORM_ID=TPP2N
 		is_io_active=NO
 		select case index
 		's1
