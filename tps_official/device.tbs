@@ -1491,7 +1491,7 @@ end sub
 '------------------------------------------------------------------------------
 public function index_to_io_num(index as byte) as pl_io_num
 	select case index
-#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2
+#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2 or PLATFORM_ID=TPP3N
 	'S1
 	case 0:index_to_io_num=pl_io_num_9_tx0
 	case 1:index_to_io_num=pl_io_num_8_rx0
@@ -1553,7 +1553,7 @@ public function index_to_io_num(index as byte) as pl_io_num
 	'S25
 	case 46:index_to_io_num=pl_io_num_44
 #endif		
-#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2
+#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2 or PLATFORM_ID=TPP2N
 	'S1
 	case 0:index_to_io_num=pl_io_num_9_tx0
 	case 1:index_to_io_num=pl_io_num_8_rx0
@@ -1594,7 +1594,7 @@ end function
 '------------------------------------------------------------------------------
 public function io_num_to_index(io_num as pl_io_num) as byte
 	select case io_num
-	#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2
+	#if PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3WG2 or PLATFORM_ID=TPP3N
 	'S1
 	case pl_io_num_9_tx0:io_num_to_index=0
 	case pl_io_num_8_rx0:io_num_to_index=1
@@ -1656,7 +1656,7 @@ public function io_num_to_index(io_num as pl_io_num) as byte
 	'S25
 	case pl_io_num_44:io_num_to_index=46
 #endif		
-#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2
+#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP2WG2 or PLATFORM_ID=TPP2N
 	'S1
 	case pl_io_num_9_tx0:io_num_to_index=0
 	case pl_io_num_8_rx0:io_num_to_index=1

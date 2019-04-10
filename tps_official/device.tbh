@@ -2,7 +2,7 @@
 
 '------------------------------------------------------------------------------
 
-#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP3W
+#if PLATFORM_ID=TPP2W or PLATFORM_ID=TPP3W or PLATFORM_ID=TPP3N or PLATFORM_ID=TPP2N
 	const NUM_HTTP_SOCKETS=3
 	const SOCK_HTTP_TXBUFF_SIZE=4
 #else

@@ -1,11 +1,11 @@
 [project]
 version=1
-platform=TPP2W(G2)
+platform=TPP2N
 src_lib_ver=2_01_02
 name=tps
 output=tps.tpc
 debug=off
-defines=/dOBJECT_LCD=LCD_ENABLED /dOBJECT_FD=FD_ENABLED /dOBJECT_KP=KP_DISABLED /dOBJECT_WLN=WLN_DISABLED /dLCD_TYPE=SOLOMON_SSD1963_FIXED_IO2 /dUSE_DNS=0 /dSUPPORTS_DISPLAY=0 /dSUPPORTS_GPRS=0
+defines=/dUSE_DNS=0 /dLCD_TYPE=SOLOMON_SSD1963_FIXED_IO2 /dOBJECT_LCD=LCD_ENABLED /dOBJECT_FD=FD_ENABLED /dSUPPORTS_DISPLAY=1 /dOBJECT_KP=KP_ENABLED /dSUPPORTS_GPRS=0 /dOBJECT_WLN=WLN_ENABLED
 transport=udp_broadcast
 [address1]
 platform=EM1206W
@@ -30,7 +30,7 @@ address=0.36.119.80.191.174
 [address6]
 platform=TPP2W
 transport=udp_broadcast
-address=0.36.119.82.169.138
+address=0.1.2.55.4.188
 [address7]
 platform=TPP3W
 transport=udp_broadcast
@@ -47,6 +47,10 @@ address=0.1.2.3.4.231
 platform=TPP2W(G2)
 transport=udp_broadcast
 address=0.36.119.82.95.105
+[address11]
+platform=TPP2N
+transport=udp_broadcast
+address=0.1.2.55.4.188
 [file1]
 path=main.tbs
 type=basic
